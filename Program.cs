@@ -181,7 +181,7 @@ JsonNode GetInitialDatabaseNode()
 }
 
 // -------------------------------------------------------------
-// 1) EMAIL ENTEGRASYONU: /api/send-email (C# MailSender + appsettings.json)
+// 1) EMAIL ENTEGRASYONU: /api/send-email (SendGrid HTTP API)
 // -------------------------------------------------------------
 app.MapPost("/api/send-email", async (HttpContext context, IConfiguration config) =>
 {
@@ -200,49 +200,62 @@ app.MapPost("/api/send-email", async (HttpContext context, IConfiguration config
             return Results.BadRequest(new { success = false, error = "Alıcı e-posta adresi (toEmail) gereklidir." });
         }
 
-        // Get SMTP Credentials from request, config, or Environment Variables (Render)
-        string senderEmail = !string.IsNullOrWhiteSpace(config["SmtpConfig:SenderEmail"])
-            ? config["SmtpConfig:SenderEmail"]!
-            : (Environment.GetEnvironmentVariable("SMTP_SENDER_EMAIL") ?? "yalcinbaris548@gmail.com");
+        // SendGrid API Key: önce config, sonra Environment Variable
+        string sendGridApiKey = config["SendGrid:ApiKey"] ?? Environment.GetEnvironmentVariable("SENDGRID_API_KEY") ?? "";
+        string senderEmail = config["SendGrid:SenderEmail"]
+            ?? Environment.GetEnvironmentVariable("SMTP_SENDER_EMAIL")
+            ?? "yalcinbaris548@gmail.com";
 
-        string customPass = doc?["customPass"]?.ToString() ?? doc?["pass"]?.ToString() ?? "";
-        string appPassword = !string.IsNullOrWhiteSpace(customPass)
-            ? customPass
-            : (!string.IsNullOrWhiteSpace(config["SmtpConfig:AppPassword"])
-                ? config["SmtpConfig:AppPassword"]!
-                : (Environment.GetEnvironmentVariable("SMTP_APP_PASSWORD") ?? ""));
-
-        string smtpHost = config["SmtpConfig:SmtpHost"] ?? "smtp.gmail.com";
-        int smtpPort = int.TryParse(config["SmtpConfig:SmtpPort"], out int p) ? p : 587;
-
-        if (string.IsNullOrWhiteSpace(appPassword))
+        if (string.IsNullOrWhiteSpace(sendGridApiKey))
         {
             return Results.Json(new
             {
                 success = false,
-                error = "16 Haneli Gmail Uygulama Şifresi ne giriş ekranından girilmiş ne de 'appsettings.json' dosyasına yazılmış. Lütfen 16 haneli şifrenizi girin veya appsettings.json dosyasına ekleyin."
+                error = "SendGrid API anahtarı bulunamadı. Render > Environment > SENDGRID_API_KEY değişkenini ekleyin."
             }, statusCode: 400);
         }
 
-        // Clean any spaces in app password
-        appPassword = appPassword.Replace(" ", "");
+        // SendGrid v3 Mail Send API
+        string htmlBody = $@"
+            <div style='font-family: Arial, sans-serif; padding: 20px; background-color: #f4f6f8; border-radius: 8px;'>
+                <h2 style='color: #1e293b;'>ArabaSatisDB Güvenli Giriş Portalı</h2>
+                <p>Sayın <strong>{personelAdi}</strong>,</p>
+                <p>Sisteme giriş yapabilmek için kullanacağınız 6 haneli güvenlik kodunuz:</p>
+                <div style='font-size: 32px; font-weight: bold; color: #2563eb; letter-spacing: 8px; margin: 20px 0; padding: 16px; background: #e8f0fe; border-radius: 8px; text-align: center;'>
+                    {verificationCode}
+                </div>
+                <p style='color: #64748b; font-size: 12px;'>Bu kodu kimseyle paylaşmayınız. Güvenliğiniz bizim için önemlidir.</p>
+            </div>";
 
-        var mailSender = new MailSender(senderEmail, appPassword, smtpHost, smtpPort);
-        bool sent = await mailSender.GüvenlikKoduGonderAsync(toEmail, personelAdi, verificationCode);
+        var payload = JsonNode.Parse($@"{{
+            ""personalizations"": [{{""to"": [{{""email"": ""{toEmail}""}}]}}],
+            ""from"": {{""email"": ""{senderEmail}"", ""name"": ""ArabaSatisDB Otomotiv Portalı""}},
+            ""subject"": ""🔐 ArabaSatisDB - 2FA Giriş Doğrulama Kodunuz"",
+            ""content"": [{{""type"": ""text/html"", ""value"": {JsonSerializer.Serialize(htmlBody)}}}]
+        }}")!;
 
-        if (sent)
+        using var http = new HttpClient();
+        http.DefaultRequestHeaders.Add("Authorization", $"Bearer {sendGridApiKey}");
+        var response = await http.PostAsync(
+            "https://api.sendgrid.com/v3/mail/send",
+            new StringContent(payload.ToJsonString(), System.Text.Encoding.UTF8, "application/json")
+        );
+
+        if (response.IsSuccessStatusCode)
         {
             return Results.Ok(new { success = true, message = $"2FA güvenlik kodu {toEmail} adresine başarıyla iletildi." });
         }
         else
         {
-            return Results.Json(new { success = false, error = "E-posta gönderilemedi. Lütfen appsettings.json içerisindeki SMTP bilgilerini ve internet bağlantınızı kontrol edin." }, statusCode: 500);
+            string errBody = await response.Content.ReadAsStringAsync();
+            return Results.Json(new { success = false, error = $"SendGrid hatası ({(int)response.StatusCode}): {errBody}" }, statusCode: 500);
         }
     }
     catch (Exception ex)
     {
         return Results.Json(new { success = false, error = ex.Message }, statusCode: 500);
     }
+
 });
 
 // -------------------------------------------------------------
