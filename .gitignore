@@ -1,0 +1,21 @@
+# .NET build çıktıları
+bin/
+obj/
+
+# Ortam ve gizli ayarlar
+appsettings.Development.json
+
+# Visual Studio / IDE
+.vs/
+*.user
+
+# Node.js (varsa)
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Batch / PowerShell başlatma scriptleri (opsiyonel)
+SUNUCUYU_BASLAT.bat
+start_server.ps1

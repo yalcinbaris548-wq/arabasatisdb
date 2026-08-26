@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArabaSatisDB - Otomotiv Galeri & Satış Yönetim Sistemi</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Mobile Top Navigation Bar -->
+  <div class="mobile-top-nav">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button class="mobile-hamburger-btn" onclick="toggleMobileSidebar()">
+        <i class="fas fa-bars"></i>
+      </button>
+      <span style="font-weight:700; font-size:1.1rem; color:#fff;">ArabaSatisDB</span>
+    </div>
+    <span style="font-size:0.75rem; background:rgba(59,130,246,0.2); color:#60a5fa; padding:4px 10px; border-radius:12px; font-weight:600;">
+      📱 Mobil Mod
+    </span>
+  </div>
+
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleMobileSidebar()"></div>
+
+  <!-- App Sidebar -->
+  <aside class="app-sidebar" id="app-sidebar">
+    <div class="brand-header">
+      <div class="brand-logo"><i class="fas fa-car"></i></div>
+      <div class="brand-info">
+        <h1>ArabaSatisDB</h1>
+        <p>Galeri & Satış Portal</p>
+      </div>
+    </div>
+
+    <nav class="nav-menu">
+      <a class="nav-item active" data-section="dashboard">
+        <i class="fas fa-chart-pie"></i>
+        <span>Genel Bakış</span>
+      </a>
+      <a class="nav-item" data-section="showroom">
+        <i class="fas fa-car-side"></i>
+        <span>Araç Vitrini & Stok</span>
+      </a>
+      <a class="nav-item" data-section="sales">
+        <i class="fas fa-handshake"></i>
+        <span>Satış Yap</span>
+      </a>
+      <a class="nav-item" data-section="admin">
+        <i class="fas fa-database"></i>
+        <span>Veri Yönetimi (CRUD)</span>
+      </a>
+      <a class="nav-item admin-only-item" data-section="sql">
+        <i class="fas fa-code"></i>
+        <span>T-SQL Şeması & Export</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div id="user-profile-display">
+        <!-- Dynamic active user session badge -->
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="processLogout()" style="width: 100%; margin-top: 10px; justify-content: center;">
+        <i class="fas fa-sign-out-alt"></i> Güvenli Çıkış Yap
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <main class="app-main">
+    
+    <!-- Horizontal Scroll Helper Bar -->
+    <div class="scroll-helper-bar">
+      <span><i class="fas fa-arrows-alt-h"></i> <strong>İpucu:</strong> Dar ekranlarda sayfanın en altında ve tabloların altındaki <strong>Sağ / Sol Kaydırma Çubuğunu</strong> kullanabilirsiniz.</span>
+      <span style="color:var(--accent-emerald); font-weight:600;"><i class="fas fa-shield-alt"></i> E-Posta Güvenlik Kodu Doğrulaması Aktif</span>
+    </div>
+
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="page-title">
+        <h2>Otomotiv Yönetim Portalı</h2>
+        <p>ArabaSatisDB T-SQL Veritabanı Entegre Yönetim Paneli</p>
+      </div>
+      <div class="top-actions">
+        <button class="btn btn-secondary" onclick="store.resetStore(); location.reload();">
+          <i class="fas fa-redo"></i> Verileri Sıfırla
+        </button>
+        <button class="btn btn-emerald" onclick="document.querySelector('[data-section=\'sales\']').click();">
+          <i class="fas fa-plus"></i> Yeni Satış Oluştur
+        </button>
+      </div>
+    </header>
+
+    <!-- SECTION 1: DASHBOARD -->
+    <section id="section-dashboard" class="app-section active">
+      <div class="stats-grid">
+        <div class="glass-card stat-card">
+          <div class="stat-icon blue"><i class="fas fa-wallet"></i></div>
+          <div class="stat-info">
+            <p>Toplam Satış Geliri</p>
+            <h3 id="stat-total-revenue">₺0</h3>
+          </div>
+        </div>
+
+        <div class="glass-card stat-card">
+          <div class="stat-icon emerald"><i class="fas fa-warehouse"></i></div>
+          <div class="stat-info">
+            <p>Stoktaki Araç Değeri</p>
+            <h3 id="stat-stock-value">₺0</h3>
+          </div>
+        </div>
+
+        <div class="glass-card stat-card">
+          <div class="stat-icon amber"><i class="fas fa-car-side"></i></div>
+          <div class="stat-info">
+            <p>Satıştaki Araç Sayısı</p>
+            <h3 id="stat-available-count">0 Araç</h3>
+          </div>
+        </div>
+
+        <div class="glass-card stat-card">
+          <div class="stat-icon purple"><i class="fas fa-check-circle"></i></div>
+          <div class="stat-info">
+            <p>Tamamlanan Satışlar</p>
+            <h3 id="stat-sold-count">0 Satış</h3>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+        <!-- Recent Sales -->
+        <div class="glass-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+            <h3><i class="fas fa-history" style="color:var(--primary);"></i> Son Satış İşlemleri</h3>
+            <button class="btn btn-secondary btn-sm" onclick="document.querySelector('[data-section=\'admin\']').click(); renderAdminTable('Satis_Tablosu');">Tümünü Gör</button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Satış No</th>
+                  <th>Şasi No</th>
+                  <th>Araç</th>
+                  <th>Müşteri</th>
+                  <th>Personel</th>
+                  <th>Tutar</th>
+                </tr>
+              </thead>
+              <tbody id="recent-sales-tbody">
+                <!-- JS Population -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Brand Distribution -->
+        <div class="glass-card">
+          <h3 style="margin-bottom:18px;"><i class="fas fa-chart-bar" style="color:var(--accent-purple);"></i> Marka Stok Dağılımı</h3>
+          <div id="brand-stats-container">
+            <!-- JS Population -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: CAR SHOWROOM -->
+    <section id="section-showroom" class="app-section">
+      <div class="glass-card filter-bar">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text" id="filter-search" class="form-control" placeholder="Marka, Model veya Şasi No ile Ara..." />
+        </div>
+        <div style="width: 160px;">
+          <select id="filter-brand" class="form-control form-control-no-icon">
+            <option value="">Tüm Markalar</option>
+          </select>
+        </div>
+        <div style="width: 160px;">
+          <select id="filter-fuel" class="form-control form-control-no-icon">
+            <option value="">Tüm Yakıtlar</option>
+          </select>
+        </div>
+        <div style="width: 160px;">
+          <select id="filter-gear" class="form-control form-control-no-icon">
+            <option value="">Tüm Şanzımanlar</option>
+          </select>
+        </div>
+        <div style="width: 150px;">
+          <select id="filter-status" class="form-control form-control-no-icon">
+            <option value="">Tüm Durumlar</option>
+            <option value="0">Stokta Var</option>
+            <option value="1">Satıldı</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="showroom-grid" class="cars-grid">
+        <!-- JS Population -->
+      </div>
+    </section>
+
+    <!-- SECTION 3: SALES TRANSACTION -->
+    <section id="section-sales" class="app-section">
+      <div class="glass-card" style="max-width: 800px; margin: 0 auto;">
+        <div style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+          <h3 style="font-size: 1.4rem; font-weight: 700; color: #fff;">
+            <i class="fas fa-file-contract" style="color: var(--accent-emerald);"></i> Araç Satış Sözleşmesi Oluştur
+          </h3>
+          <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 4px;">
+            Stoktaki aracı, müşteri ve satışı gerçekleştiren personel bilgileri ile eşleştirerek sistem satış kaydı oluşturun.
+          </p>
+        </div>
+
+        <form id="sales-form" onsubmit="processSaleTransaction(event)">
+          <div class="form-grid">
+            
+            <div class="form-group full-width">
+              <label><i class="fas fa-car"></i> Satılacak Araç (Stoktakiler)</label>
+              <select id="sale-car-select" class="form-control form-control-no-icon" required onchange="autoFillCarPrice()">
+                <option value="">-- Araç Seçiniz --</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label><i class="fas fa-user-tie"></i> Müşteri</label>
+              <select id="sale-customer-select" class="form-control form-control-no-icon" required>
+                <option value="">-- Müşteri Seçiniz --</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label><i class="fas fa-id-badge"></i> Satışı Yapan Personel</label>
+              <select id="sale-personnel-select" class="form-control form-control-no-icon" required>
+                <option value="">-- Personel Seçiniz --</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label><i class="fas fa-lira-sign"></i> Anlaşılan Satış Fiyatı (₺)</label>
+              <input type="number" id="sale-price-input" step="0.01" class="form-control form-control-no-icon" placeholder="0.00" required />
+            </div>
+
+            <div class="form-group">
+              <label><i class="fas fa-calendar-alt"></i> Satış Tarihi</label>
+              <input type="date" id="sale-date-input" class="form-control form-control-no-icon" required />
+            </div>
+
+          </div>
+
+          <div style="margin-top: 30px; display: flex; justify-content: flex-end; gap: 12px;">
+            <button type="reset" class="btn btn-secondary">Temizle</button>
+            <button type="submit" class="btn btn-emerald" style="padding: 12px 30px;">
+              <i class="fas fa-check-circle"></i> Satışı Onayla & Fatura Üret
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- SECTION 4: ADMIN CRUD DATABASE WITH NAMED KEYS -->
+    <section id="section-admin" class="app-section">
+      <div class="glass-card" style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <h3 id="admin-table-title">Veri Tabanı Tablo Yönetimi</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">
+              İlişkili ID (1,2,3) değerleri isim ve etiketiyle görüntülenmektedir.
+            </p>
+          </div>
+          <button class="btn btn-primary" onclick="openAddRecordModal()">
+            <i class="fas fa-plus-circle"></i> Yeni Kayıt Ekle
+          </button>
+        </div>
+
+        <!-- Table Selector Tabs -->
+        <div class="tab-header">
+          <button class="tab-btn active" data-table="Araclar" onclick="renderAdminTable('Araclar')">🚗 Araclar</button>
+          <button class="tab-btn" data-table="Markalar" onclick="renderAdminTable('Markalar')">🏷️ Markalar</button>
+          <button class="tab-btn" data-table="Modeller" onclick="renderAdminTable('Modeller')">🚘 Modeller</button>
+          <button class="tab-btn" data-table="Paketler" onclick="renderAdminTable('Paketler')">📦 Paketler</button>
+          <button class="tab-btn" data-table="Sansimanlar" onclick="renderAdminTable('Sansimanlar')">⚙️ Sansimanlar</button>
+          <button class="tab-btn" data-table="Yakit_Turu" onclick="renderAdminTable('Yakit_Turu')">⛽ Yakit_Turu</button>
+          <button class="tab-btn" data-table="Motor_Turu" onclick="renderAdminTable('Motor_Turu')">⚡ Motor_Turu</button>
+          <button class="tab-btn" data-table="Personeller" onclick="renderAdminTable('Personeller')">👔 Personeller</button>
+          <button class="tab-btn" data-table="Musteriler" onclick="renderAdminTable('Musteriler')">👤 Musteriler</button>
+          <button class="tab-btn" data-table="Satis_Tablosu" onclick="renderAdminTable('Satis_Tablosu')">💳 Satis_Tablosu</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead id="admin-table-thead"></thead>
+            <tbody id="admin-table-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: SQL SCHEMA & EXPORTER (ADMIN ONLY) -->
+    <section id="section-sql" class="app-section">
+      <div class="glass-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+          <div>
+            <h3><i class="fas fa-database" style="color:var(--primary);"></i> ArabaSatisDB T-SQL Şeması & Veri Dışa Aktar</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-top:4px;">
+              İlettiğiniz T-SQL tablosu ve oluşturulan tüm verileri SQL Server'a aktarmak için dışa aktarın (Yönetici Özel).
+            </p>
+          </div>
+          <button class="btn btn-emerald" onclick="exportCurrentDataAsSql()">
+            <i class="fas fa-file-export"></i> T-SQL INSERT Scripti İndir (.sql)
+          </button>
+        </div>
+
+        <pre class="sql-code-block" id="sql-schema-display"></pre>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- AUTH LOGIN MODAL (OVERLAY) WITH MULTI-STEP 2FA EMAIL CODE VERIFICATION -->
+  <div id="login-modal" class="modal-overlay">
+    <div class="modal-container login-card" style="max-width: 480px;">
+      
+      <!-- STEP 1: HESAP SEÇİMİ VE ŞİFRE -->
+      <div id="login-step-1">
+        <div class="login-header">
+          <div class="logo"><i class="fas fa-user-lock"></i></div>
+          <h2>ArabaSatisDB Giriş Portalı</h2>
+          <p><span style="background:rgba(59,130,246,0.2); color:#60a5fa; padding:2px 8px; border-radius:10px; font-weight:600; font-size:0.75rem;">1. Adım</span> Personel & Hesap Seçimi</p>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label><i class="fas fa-user-tie"></i> Personel / Yönetici Hesabı Seçin</label>
+          <select id="login-personnel-select" class="form-control form-control-no-icon" required>
+            <!-- JS Population -->
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 24px; position: relative;">
+          <label><i class="fas fa-key"></i> Giriş Şifresi</label>
+          <div style="position: relative;">
+            <input type="password" id="login-password-input" class="form-control form-control-no-icon" value="Baris2026!" placeholder="******" required style="padding-right: 45px;" />
+            <button type="button" id="toggle-password-btn" onclick="togglePasswordVisibility()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; padding: 5px;">
+              <i class="fas fa-eye" id="toggle-password-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary" onclick="goToLoginStep(2)" style="width: 100%; justify-content: center; padding: 12px;">
+          <span>İlerle: 16 Haneli Şifre & 2FA Sayfası</span> <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+
+      <!-- STEP 2: DEDİKE 16 HANELİ GMAİL ŞİFRESİ VE 2FA SAYFASI -->
+      <div id="login-step-2" style="display: none;">
+        <div class="login-header">
+          <div class="logo" style="background: rgba(16, 185, 129, 0.15); color: #34d399;"><i class="fas fa-shield-alt"></i></div>
+          <h2>2FA E-Posta Güvenlik Doğrulaması</h2>
+          <p><span style="background:rgba(16,185,129,0.2); color:#34d399; padding:2px 8px; border-radius:10px; font-weight:600; font-size:0.75rem;">2. Adım</span> 16 Haneli Şifre & Kodu Gönder</p>
+        </div>
+
+        <form id="login-form" onsubmit="processLoginSubmit(event)">
+          
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label><i class="fab fa-google"></i> Gönderici Gmail 16 Haneli Uygulama Şifreniz</label>
+            <input type="password" id="login-app-pass-input" class="form-control form-control-no-icon" placeholder="Örn: abcd efgh ijkl mnop (İsteğe bağlı)" />
+            <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 4px;">
+              * Kendi 16 haneli Google uygulama şifrenizi girebilir veya boş bırakarak sunucu varsayılanını (<code>appsettings.json</code>) kullanabilirsiniz.
+            </small>
+          </div>
+
+          <button type="button" class="btn btn-secondary" onclick="requestEmail2FACode()" style="width: 100%; margin-bottom: 16px; justify-content: center; background: rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.3);">
+            <i class="fas fa-paper-plane"></i> E-Postama 6 Haneli Güvenlik Kodu Gönder
+          </button>
+
+          <div id="2fa-input-group" class="form-group" style="display: none; margin-bottom: 20px;">
+            <label><i class="fas fa-key"></i> E-Postanıza Gelen 6 Haneli Güvenlik Kodu</label>
+            <input type="text" id="login-2fa-input" class="form-control form-control-no-icon" placeholder="Örn: 584920" style="font-size: 1.2rem; letter-spacing: 4px; font-weight: 700; text-align: center;" maxLength="6" />
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button type="button" class="btn btn-secondary" onclick="goToLoginStep(1)" style="flex: 1; justify-content: center;">
+              <i class="fas fa-arrow-left"></i> Geri
+            </button>
+            <button type="submit" class="btn btn-emerald" style="flex: 2; justify-content: center; padding: 12px;">
+              <i class="fas fa-sign-in-alt"></i> Sisteme Giriş Yap
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL 2: INVOICE / SATIŞ SÖZLEŞMESİ -->
+  <div id="invoice-modal" class="modal-overlay">
+    <div class="modal-container" style="max-width: 750px;">
+      <div class="modal-header">
+        <h3><i class="fas fa-receipt" style="color:var(--accent-emerald);"></i> Resmi Satış Faturası & Makbuz</h3>
+        <button class="close-btn" onclick="closeInvoiceModal()">&times;</button>
+      </div>
+      <div id="invoice-printable-area">
+        <!-- JS Invoice Population -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeInvoiceModal()">Kapat</button>
+        <button class="btn btn-primary" onclick="printInvoice()">
+          <i class="fas fa-print"></i> Yazdır / PDF Kaydet
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: GENERIC CRUD ADD / EDIT -->
+  <div id="crud-modal" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="crud-modal-title">Kayıt Ekle / Düzenle</h3>
+        <button class="close-btn" onclick="closeCrudModal()">&times;</button>
+      </div>
+      <form id="crud-form" onsubmit="saveCrudRecord(event)">
+        <input type="hidden" id="crud-record-pk" value="" />
+        <div id="crud-form-fields" class="form-grid">
+          <!-- JS Population -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeCrudModal()">İptal</button>
+          <button type="submit" class="btn btn-primary">Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JS Engine -->
+  <script src="app.js"></script>
+</body>
+</html>
