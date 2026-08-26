@@ -200,12 +200,18 @@ app.MapPost("/api/send-email", async (HttpContext context, IConfiguration config
             return Results.BadRequest(new { success = false, error = "Alıcı e-posta adresi (toEmail) gereklidir." });
         }
 
-        // Get SMTP Credentials from request or fallback to appsettings.json
-        string senderEmail = config["SmtpConfig:SenderEmail"] ?? "yalcinbaris548@gmail.com";
+        // Get SMTP Credentials from request, config, or Environment Variables (Render)
+        string senderEmail = !string.IsNullOrWhiteSpace(config["SmtpConfig:SenderEmail"])
+            ? config["SmtpConfig:SenderEmail"]!
+            : (Environment.GetEnvironmentVariable("SMTP_SENDER_EMAIL") ?? "yalcinbaris548@gmail.com");
+
         string customPass = doc?["customPass"]?.ToString() ?? doc?["pass"]?.ToString() ?? "";
         string appPassword = !string.IsNullOrWhiteSpace(customPass)
             ? customPass
-            : (config["SmtpConfig:AppPassword"] ?? "");
+            : (!string.IsNullOrWhiteSpace(config["SmtpConfig:AppPassword"])
+                ? config["SmtpConfig:AppPassword"]!
+                : (Environment.GetEnvironmentVariable("SMTP_APP_PASSWORD") ?? ""));
+
         string smtpHost = config["SmtpConfig:SmtpHost"] ?? "smtp.gmail.com";
         int smtpPort = int.TryParse(config["SmtpConfig:SmtpPort"], out int p) ? p : 587;
 

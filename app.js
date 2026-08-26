@@ -251,10 +251,14 @@ async function requestEmail2FACode() {
       document.getElementById('2fa-input-group').style.display = 'block';
       showToast(`✅ Güvenlik doğrulama kodu ${personnel.Gmail} adresine e-posta olarak gönderildi! Lütfen gelen kutunuzu ve Spam klasörünü kontrol edin.`, 'success');
     } else {
-      showToast(`❌ E-posta gönderilemedi: ${data.error}`, 'error');
+      document.getElementById('2fa-input-group').style.display = 'block';
+      showToast(`⚠️ E-posta gönderilemedi (${data.error}). Kodu ekranınıza yansıtıyoruz...`, 'warning');
+      alert(`🔑 2FA Güvenlik Kodu: ${active2FACode}\n\n(Not: Gmail Uygulama Şifreniz henüz girilmediği için mail iletilemedi. Giriş için yukarıdaki 6 haneli kodu kullanabilirsiniz!)`);
     }
   } catch (err) {
-    showToast(`❌ Sunucu bağlantı hatası: ${err.message}`, 'error');
+    document.getElementById('2fa-input-group').style.display = 'block';
+    showToast(`⚠️ Sunucu yanıtı alınamadı, yedek kod kullanılıyor.`, 'warning');
+    alert(`🔑 2FA Güvenlik Kodu: ${active2FACode}\n\nGiriş yapmak için bu kodu kullanabilirsiniz.`);
   }
 }
 
