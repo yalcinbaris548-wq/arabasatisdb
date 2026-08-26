@@ -233,10 +233,14 @@ async function requestEmail2FACode() {
 
   showToast(`📧 ${personnel.Gmail} adresine 2FA e-postası gönderiliyor...`, 'info');
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 7000);
+
   try {
     const res = await fetch('/api/send-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         toEmail: personnel.Gmail,
         personelName: `${personnel.Adi} ${personnel.Soyadi}`,
@@ -245,6 +249,7 @@ async function requestEmail2FACode() {
       })
     });
 
+    clearTimeout(timeoutId);
     const data = await res.json();
 
     if (data.success) {
@@ -253,12 +258,13 @@ async function requestEmail2FACode() {
     } else {
       document.getElementById('2fa-input-group').style.display = 'block';
       showToast(`⚠️ E-posta gönderilemedi (${data.error}). Kodu ekranınıza yansıtıyoruz...`, 'warning');
-      alert(`🔑 2FA Güvenlik Kodu: ${active2FACode}\n\n(Not: Gmail Uygulama Şifreniz henüz girilmediği için mail iletilemedi. Giriş için yukarıdaki 6 haneli kodu kullanabilirsiniz!)`);
+      alert(`🔑 2FA Güvenlik Kodu: ${active2FACode}\n\n(Not: Gmail SMTP sunucusu yanıt vermediği için mail iletilemedi. Giriş yapmak için yukarıdaki 6 haneli kodu kullanabilirsiniz!)`);
     }
   } catch (err) {
+    clearTimeout(timeoutId);
     document.getElementById('2fa-input-group').style.display = 'block';
-    showToast(`⚠️ Sunucu yanıtı alınamadı, yedek kod kullanılıyor.`, 'warning');
-    alert(`🔑 2FA Güvenlik Kodu: ${active2FACode}\n\nGiriş yapmak için bu kodu kullanabilirsiniz.`);
+    showToast(`⚠️ E-posta sunucusu yanıt vermedi, yedek doğrulama kodu ekranda açıldı.`, 'warning');
+    alert(`🔑 2FA Güvenlik Kodu: ${active2FACode}\n\nE-posta sunucusu zaman aşımına uğradığı için 6 haneli kodunuz doğrudan ekranınıza tanımlandı. Giriş yapmak için yukarıdaki kodu kullanın.`);
   }
 }
 

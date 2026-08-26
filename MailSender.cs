@@ -40,6 +40,7 @@ namespace ArabaSatisDB
             {
                 using (SmtpClient smtpClient = new SmtpClient(_smtpHost, _smtpPort))
                 {
+                    smtpClient.Timeout = 6000; // 6 saniye zaman aşımı (Render kilitlenmesini önler)
                     smtpClient.EnableSsl = true;
                     smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
                     smtpClient.UseDefaultCredentials = false;
